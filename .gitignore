@@ -1,4 +1,11 @@
 exe
 exe2
+exe_suid
+exe_sub_dir
+exe_dac
+exe_bind
+exe_sub_dir_bind
+exe_sub_dir_suid
 lib/
 libmylib.so
+hack/

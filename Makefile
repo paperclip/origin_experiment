@@ -9,8 +9,37 @@ lib/libotherlib.so : mylib.c
 exe : exe.c libmylib.so
 	gcc -fPIC exe.c -L. -lmylib -ldl -o $@ -Wl,-rpath,'$$ORIGIN'
 
-exe2 : exe.c lib/libotherlib.so
+exe_sub_dir : exe.c lib/libotherlib.so
 	gcc -fPIC exe.c -Llib -lotherlib -ldl -o $@ -Wl,-rpath,'$$ORIGIN/lib'
+
+exe_bind : exe
+	cat $< >$@
+	chmod 700 $@
+	sudo chown $$USER: $@
+	sudo setcap 'cap_net_bind_service=+ep' $@
+
+exe_dac : exe
+	cat $< >$@
+	chmod 700 $@
+	sudo chown $$USER: $@
+	sudo setcap 'cap_dac_read_search=ep' $@
+
+exe_suid : exe
+	cat $< >$@
+	chmod 700 $@
+	sudo chown root: $@
+	sudo chmod 6777 $@
+
+exe_sub_dir_bind : exe_sub_dir
+	cat $< >$@
+	chmod 700 $@
+	sudo chown $$USER: $@
+	sudo setcap 'cap_net_bind_service=+ep' $@
+
+exe_sub_dir_suid : exe_sub_dir
+	cat $< >$@
+	sudo chown root: $@
+	sudo chmod 6777 $@
 
 hack/libmylib.so : hacklib.c
 	mkdir -p hack
@@ -28,47 +57,38 @@ hack/cpexe : exe hack/libmylib.so
 	mkdir -p hack
 	cp -f exe $@
 
+clean :
+	rm -rf exe exe2 exe_sub_dir libmylib.so lib exe_bind exe_dac exe_suid hack exe_sub_dir_suid exe_sub_dir_bind
+
 ## Test targets
 test1 : exe
-	sudo chown $$USER: $<
 	getcap $<
 	./$<
 
-test2 : exe
-	sudo chown $$USER: $<
-	sudo setcap 'cap_net_bind_service=+ep' $<
+test2 : exe_bind
 	getcap $<
 	./$<
 
-test3 : exe
-	sudo chown $$USER: $<
-	sudo setcap 'cap_dac_read_search=ep' $<
+test3 : exe_dac
 	getcap $<
 	./$<
 
-test4 : exe
-	sudo chown root: $<
-	sudo chmod 6777 $<
+test4 : exe_suid
 	getcap $<
 	ls -l $<
 	ldd $< || true
 	./$<
 
-test5 : exe2
-	sudo chown $$USER: $<
+test5 : exe_sub_dir
 	getcap $<
 	ls -l $<
 	./$<
 
-test6 : exe2
-	sudo chown $$USER: $<
-	sudo setcap 'cap_net_bind_service=+ep' $<
+test6 : exe_sub_dir_bind
 	getcap $<
 	./$<
 
-test7 : exe2
-	sudo chown root: $<
-	sudo chmod 6777 $<
+test7 : exe_sub_dir_suid
 	getcap $<
 	ls -l $<
 	ldd $< || true
@@ -91,9 +111,6 @@ test10 : hack/hardexe hack/libmylib.so
 	ls -l $< exe
 	ldd $< || true
 	LD_DEBUG=libs ./$<
-
-clean :
-	rm -f exe exe2 libmylib.so lib
 
 
 .PHONY : clean test1 test2 test3 test4 test5 test6 test7 test8 test9 test10
