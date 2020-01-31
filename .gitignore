@@ -6,6 +6,10 @@ exe_dac
 exe_bind
 exe_sub_dir_bind
 exe_sub_dir_suid
+exe_static_cat
+launcher_cap
+libreadfile.so
+testfile
 lib/
 libmylib.so
 hack/
