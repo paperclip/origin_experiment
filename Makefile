@@ -12,6 +12,23 @@ exe : exe.c libmylib.so
 exe2 : exe.c lib/libotherlib.so
 	gcc -fPIC exe.c -Llib -lotherlib -ldl -o $@ -Wl,-rpath,'$$ORIGIN/lib'
 
+hack/libmylib.so : hacklib.c
+	mkdir -p hack
+	gcc -fPIC -shared -o $@ $<
+
+hack/lnexe : exe hack/libmylib.so
+	mkdir -p hack
+	ln -snf ../exe $@
+
+hack/hardexe : exe hack/libmylib.so
+	mkdir -p hack
+	ln -nf exe $@
+
+hack/cpexe : exe hack/libmylib.so
+	mkdir -p hack
+	cp -f exe $@
+
+## Test targets
 test1 : exe
 	sudo chown $$USER: $<
 	getcap $<
@@ -57,8 +74,26 @@ test7 : exe2
 	ldd $< || true
 	./$<
 
+test8 : hack/lnexe hack/libmylib.so
+	getcap $<
+	ls -l $< exe
+	ldd $< || true
+	LD_DEBUG=libs ./$<
+
+test9 : hack/cpexe hack/libmylib.so
+	getcap $<
+	ls -l $< exe
+	ldd $< || true
+	LD_DEBUG=libs ./$<
+
+test10 : hack/hardexe hack/libmylib.so
+	getcap $<
+	ls -l $< exe
+	ldd $< || true
+	LD_DEBUG=libs ./$<
+
 clean :
 	rm -f exe exe2 libmylib.so lib
 
 
-.PHONY : clean test1 test2 test3 test4 test5
+.PHONY : clean test1 test2 test3 test4 test5 test6 test7 test8 test9 test10
